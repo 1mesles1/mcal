@@ -1,4 +1,4 @@
-# dcal (v0.3.0)
+# dcal (v0.5.0)
 
 A modern, fast, and standalone CLI calendar utility written in Rust. It serves as a drop-in or enhanced replacement for the classic `cal`/`ncal` commands, featuring auto-localization, grid alignment, customizable month ranges, interactive navigation, and todo/event integration.
 
@@ -54,9 +54,12 @@ makepkg -si
 * `dcal -e` / `dcal -r` — Force English or Russian output regardless of system locale (the leftmost flag takes priority).
 * `dcal -v` / `dcal -h` — Show version or help message.
 * `dcal -i` — **Interactive Mode**. Navigate months with **Left/Right/Up/Down Arrow Keys**. Press **Q** or **Esc** to exit. *Tip: If combined with year mode (`-gi`), Arrow Keys will skip an entire year!*
+* `dcal -w` — Display ISO-8601 week numbers on the left side of the calendar grid.
 * `dcal -d` — **Events Mode**. Highlights days with events in green and lists descriptions below the grid for the rendered period.
   * Data file path: `~/.config/dcal/events.txt` (automatically created on first launch).
   * Format inside the file: `DD.MM.YYYY - event description` (e.g., `23.05.2026 - Clean room`).
+* `dcal -l` — List all existing events from the database chronologically and exit.
+* `dcal -a` — Launch the built-in **Interactive Event Manager Console**. Features its own command menu: `[l]` list events, `[a]` add event with date validation, `[d]` recursively delete events by index, and `[q]` return to shell.
 
 ---
 
@@ -75,8 +78,11 @@ makepkg -si
 * **Интерактивный режим:** Плавное листание месяцев или лет с помощью стрелок клавиатуры в реальном времени.
 * **Интеграция с планами/задачами:** Подсвечивает зелёным цветом дни с запланированными делами и выводит список описаний под календарной сеткой.
 * `dcal -v` / `dcal -h` — Показать версию или справку.
-* `dcal -i` — Интерактивный режим (листание месяцев стрелками, выход на Q или Esc)
+* `dcal -i` — Интерактивный режим (листание месяцев стрелками, выход на Q или Esc).
+* `dcal -w` — Отобразить порядковые номера недель года по стандарту ISO-8601 слева от календарной сетки.
 * `dcal -d` — **Режим событий**. Выделяет зеленым цветом дни с событиями и отображает описания событий под сеткой за отображаемый период.
+* `dcal -l` — Быстрый вывод всех существующих в базе напоминаний в хронологическом порядке.
+* `dcal -a` — Запуск интерактивного **Менеджера задач**. Открывает внутреннюю консоль управления: `[l]` показать записи, `[a]` добавить запись с валидацией дат, `[d]` удаление по номерам с автообновлением списка, `[q]` выход.
 
 ## Работа с файлом задач (`-d`)
 Файл создаётся автоматически при первом запуске программы по пути: `~/.config/dcal/events.txt`.
