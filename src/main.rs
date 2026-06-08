@@ -135,8 +135,22 @@ fn handle_interactive_manager(is_ru: bool) {
     }
 }
 
+// Убедись, что в самом верху файла (или внутри функции) доступен Local из chrono:
+// use chrono::Local;
+
 fn handle_sub_add(storage: &mut EventStorage, is_ru: bool) {
-    let msg_date = if is_ru { "Введите дату (ДД.ММ.ГГГГ) или 'q' для отмены: " } else { "Enter date (DD.MM.YYYY) or 'q' to cancel: " };
+    // 1. Получаем текущую дату системы
+    let today = chrono::Local::now().naive_local().date();
+    let today_str = today.format("%d.%m.%Y").to_string();
+
+    // 2. Выводим информацию о сегодняшней дате перед запросом ввода
+    if is_ru {
+        println!("Сегодня: {}", today_str);
+    } else {
+        println!("Today is: {}", today_str);
+    }
+
+    let msg_date = if is_ru { "Введите дату (ДД.ММ.ГГГГ или ДД.ММ.ГГ) или 'q' для отмены: " } else { "Enter date (DD.MM.YYYY or DD.MM.YY) or 'q' to cancel: " };
     let msg_desc = if is_ru { "Введите описание задачи или 'q' для отмены: " } else { "Enter event description or 'q' to cancel: " };
     let msg_err = if is_ru { "Ошибка: Неверный формат даты! Попробуйте снова." } else { "Error: Invalid date format! Please try again." };
     
@@ -149,7 +163,14 @@ fn handle_sub_add(storage: &mut EventStorage, is_ru: bool) {
         let input = input.trim();
         if input == "q" || input == "Q" { return; }
 
-        if let Ok(date) = NaiveDate::parse_from_str(input, "%d.%m.%Y") {
+        let parts: Vec<&str> = input.split('.').collect();
+        let processed_input = if parts.len() == 3 && parts[2].len() == 2 {
+            format!("{}.{}.20{}", parts[0], parts[1], parts[2])
+        } else {
+            input.to_string()
+        };
+
+        if let Ok(date) = NaiveDate::parse_from_str(&processed_input, "%d.%m.%Y") {
             validated_date = date;
             break;
         } else { println!("{}", msg_err); }
@@ -164,9 +185,14 @@ fn handle_sub_add(storage: &mut EventStorage, is_ru: bool) {
 
     storage.events.entry(validated_date).or_insert_with(Vec::new).push(desc);
     save_all_events(storage);
-    println!("{}", if is_ru { "Успешно добавлено!" } else { "Successfully added!" });
+    
+    let formatted_date = validated_date.format("%d.%m.%Y").to_string();
+    if is_ru {
+        println!("Успешно добавлено на {}!", formatted_date);
+    } else {
+        println!("Successfully added to {}!", formatted_date);
+    }
 }
-
 fn handle_sub_delete(storage: &mut EventStorage, is_ru: bool) {
     let msg_prompt = if is_ru { "Введите номер записи для удаления или 'q' для выхода в меню: " } else { "Enter item number to delete or 'q' to return: " };
     let msg_err = if is_ru { "Ошибка: Неверный номер! Попробуйте снова." } else { "Error: Invalid number! Please try again." };
@@ -177,7 +203,16 @@ fn handle_sub_delete(storage: &mut EventStorage, is_ru: bool) {
             return;
         }
 
-        // Генерируем пронумерованный плоский список для удаления
+        // --- НАЧАЛО ВЫВОДА ТЕКУЩЕЙ ДАТЫ ---
+        let today = chrono::Local::now().naive_local().date();
+        let today_str = today.format("%d.%m.%Y").to_string();
+        if is_ru {
+            println!("Сегодня: {}", today_str);
+        } else {
+            println!("Today is: {}", today_str);
+        }
+        // --- КОНЕЦ ВЫВОДА ТЕКУЩЕЙ ДАТЫ ---
+
         let mut flat_list = Vec::new();
         for (date, descs) in &storage.events {
             for desc in descs {
@@ -199,18 +234,24 @@ fn handle_sub_delete(storage: &mut EventStorage, is_ru: bool) {
         if let Ok(num) = input.parse::<usize>() {
             if num > 0 && num <= flat_list.len() {
                 let (target_date, target_desc) = &flat_list[num - 1];
+                let deleted_date_str = target_date.format("%d.%m.%Y").to_string();
+                
                 if let Some(descs) = storage.events.get_mut(target_date) {
                     if let Some(pos) = descs.iter().position(|x| x == target_desc) {
                         descs.remove(pos);
                     }
                 }
-                // Чистим пустые даты
                 if storage.events.get(target_date).map_or(false, |v| v.is_empty()) {
                     storage.events.remove(target_date);
                 }
                 save_all_events(storage);
-                println!("{}", if is_ru { "Успешно удалено!\n" } else { "Successfully deleted!\n" });
-                continue; // заново выведет пронумерованный список
+                
+                if is_ru {
+                    println!("Запись от {} успешно удалена!\n", deleted_date_str);
+                } else {
+                    println!("Event from {} successfully deleted!\n", deleted_date_str);
+                }
+                continue; 
             }
         }
         println!("{}", msg_err);
@@ -225,7 +266,7 @@ fn main() {
             print_help();
             std::process::exit(0);
         } else if arg == "-v" || arg == "--version" {
-            println!("dcal version 0.5.0");
+            println!("dcal version 0.6.0");
             std::process::exit(0);
         }
     }
