@@ -1,6 +1,6 @@
 # Maintainer: measles <denkori80@gmail.com>
 pkgname=dcal
-pkgver=0.7.0
+pkgver=0.7.1
 pkgrel=1
 pkgdesc="A modern, fast, and standalone CLI calendar utility written in Rust with borders, interactive navigation, todo txt integration and localization support"
 arch=('x86_64' 'aarch64')

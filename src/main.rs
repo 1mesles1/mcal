@@ -217,7 +217,7 @@ fn handle_sub_add(storage: &mut EventStorage, is_ru: bool) {
         println!("Today is: {}", today_str);
     }
 
-    let msg_date = if is_ru { "Введите дату (ДД.ММ.ГГГГ, ДД.ММ.ГГ или 00.00.ГГГГ) или 'q' для отмены: " } else { "Enter date (DD.MM.YYYY, DD.MM.YY or 00.00.YYYY) or 'q' to cancel: " };
+    let msg_date = if is_ru { "Введите дату (ДД.ММ.ГГГГ (ГГ) / 00.00.ГГГГ / 00.00.ГГ) или 'q' для отмены: " } else { "Enter date (DD.MM.YYYY (YY) / 00.00.YYYY / 00.00.YY) or 'q' to cancel: " };
     let msg_desc = if is_ru { "Введите описание задачи или 'q' для отмены: " } else { "Enter event description or 'q' to cancel: " };
     let msg_err = if is_ru { "Ошибка: Неверный формат даты! Попробуйте снова." } else { "Error: Invalid date format! Please try again." };
     
@@ -328,7 +328,7 @@ fn main() {
             print_help();
             std::process::exit(0);
         } else if arg == "-v" || arg == "--version" {
-            println!("dcal version 0.7.0");
+            println!("dcal version 0.7.1");
             std::process::exit(0);
         }
     }
