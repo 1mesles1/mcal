@@ -99,7 +99,7 @@ struct EventStorage {
 }
 
 fn print_help() {
-    println!("Usage: dcal [options]");
+    println!("Usage: mcal [options]");
     println!();
     println!("Options:");
     println!("  -h          Show this help message");
@@ -118,7 +118,7 @@ fn print_help() {
     println!("              lists descriptions below the grid for the rendered period.");
     println!("              Overdue events will have their dates highlighted in red.");
     println!("              Supports global '00.00.0000' (always shown) and yearly '00.00.YYYY' events.");
-    println!("              Data file path: ~/.config/dcal/events.txt");
+    println!("              Data file path: ~/.config/mcal/events.txt");
     println!("  -l          List all existing events from database chronologically.");
     println!("  -a          Interactive event manager console. Features:");
     println!("              [l] list events, [a] add event (pre-fills today's date, use arrow keys");
@@ -127,7 +127,7 @@ fn print_help() {
 
 fn get_config_path() -> (PathBuf, PathBuf) {
     let home_dir = env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
-    let config_dir = home_dir.join(".config").join("dcal");
+    let config_dir = home_dir.join(".config").join("mcal");
     let file_path = config_dir.join("events.txt");
     (config_dir, file_path)
 }
@@ -184,9 +184,9 @@ fn handle_interactive_manager(is_ru: bool) {
     let mut storage = load_events();
     
     let menu_msg = if is_ru {
-        "\n--- МЕНЕДЖЕР ЗАДАЧ dcal ---\n[l] Показать все записи\n[a] Добавить запись\n[d] Удалить запись\n[q] Выйти в терминал\nВыберите действие: "
+        "\n--- МЕНЕДЖЕР ЗАДАЧ mcal ---\n[l] Показать все записи\n[a] Добавить запись\n[d] Удалить запись\n[q] Выйти в терминал\nВыберите действие: "
     } else {
-        "\n--- dcal EVENT MANAGER ---\n[l] List all events\n[a] Add new event\n[d] Delete event\n[q] Quit to terminal\nChoose action: "
+        "\n--- mcal EVENT MANAGER ---\n[l] List all events\n[a] Add new event\n[d] Delete event\n[q] Quit to terminal\nChoose action: "
     };
 
     loop {
@@ -342,7 +342,7 @@ fn main() {
             print_help();
             std::process::exit(0);
         } else if arg == "-v" || arg == "--version" {
-            println!("dcal version 0.8.0");
+            println!("mcal version 0.8.0");
             std::process::exit(0);
         }
     }
