@@ -342,7 +342,7 @@ fn main() {
             print_help();
             std::process::exit(0);
         } else if arg == "-v" || arg == "--version" {
-            println!("mcal version 0.8.0");
+            println!("mcal version 0.8.1");
             std::process::exit(0);
         }
     }
