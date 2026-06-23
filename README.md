@@ -1,4 +1,4 @@
-# mcal (v0.8.1)
+# mcal (v0.8.2)
 
 A modern, fast, and standalone CLI calendar utility written in Rust. It serves as a drop-in or enhanced replacement for the classic `cal`/`ncal` commands, featuring auto-localization, grid alignment, customizable month ranges, interactive navigation, and todo/event integration.
 
