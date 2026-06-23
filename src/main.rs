@@ -13,6 +13,7 @@ use crossterm::{
     event::{read, Event, KeyCode, KeyEventKind},
 };
 use ctrlc;
+use std::sync::OnceLock;
 
 // ========== КОНСТАНТЫ ==========
 const MONTHS_RU: [&str; 12] = [
@@ -36,6 +37,16 @@ const MIN_WEEKS: usize = 4;
 const MAX_WEEKS: usize = 6;
 const WEEK_NUM_PADDING: usize = 3;
 const COL_SPACING: &str = "    ";
+
+// ========== ГЛОБАЛЬНЫЙ ПУТЬ К ФАЙЛУ СОБЫТИЙ ==========
+static EVENTS_FILE_PATH: OnceLock<PathBuf> = OnceLock::new();
+
+fn get_events_file_path() -> PathBuf {
+    EVENTS_FILE_PATH.get().cloned().unwrap_or_else(|| {
+        let (_, file_path) = get_config_path();
+        file_path
+    })
+}
 
 // ========== СТРУКТУРЫ ==========
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -173,11 +184,13 @@ fn get_config_path() -> (PathBuf, PathBuf) {
 
 fn load_events() -> EventStorage {
     let mut storage = BTreeMap::new();
-    let (config_dir, file_path) = get_config_path();
+    let file_path = get_events_file_path();
+    let (config_dir, _) = get_config_path();
 
     if !config_dir.exists() { 
         let _ = fs::create_dir_all(&config_dir); 
     }
+    
     if !file_path.exists() { 
         let _ = File::create(&file_path); 
     }
@@ -198,7 +211,7 @@ fn load_events() -> EventStorage {
 }
 
 fn save_all_events(storage: &EventStorage) {
-    let (_, file_path) = get_config_path();
+    let file_path = get_events_file_path();
     if let Ok(mut file) = File::create(&file_path) {
         for (event_date, descs) in &storage.events {
             for desc in descs {
@@ -336,7 +349,6 @@ fn generate_month_lines(
         if use_border {
             grid_line = format!("│{}│", grid_line);
         }
-        // Добавляем RESET в конце строки для гарантии сброса цвета
         lines.push(format!("{}{}{}", prefix, grid_line, RESET));
     }
 
@@ -355,7 +367,6 @@ fn generate_month_lines(
             String::new() 
         };
         let grid_part = if use_border { format!("│{}│", empty_line) } else { empty_line };
-        // Добавляем RESET в конце строки для гарантии сброса цвета
         lines.push(format!("{}{}{}", prefix, grid_part, RESET));
     }
 
@@ -432,7 +443,7 @@ fn print_months_row(
 // ========== ОТОБРАЖЕНИЕ СОБЫТИЙ ==========
 
 fn print_events_list(
-    _is_ru: bool,  // Добавляем подчеркивание, чтобы убрать предупреждение
+    _is_ru: bool, 
     months: &[(i32, i32)], 
     storage: &EventStorage, 
     interactive: bool
@@ -442,7 +453,7 @@ fn print_events_list(
 
     let ensure_header = |hp: &mut bool| {
         if !*hp {
-            print_line("", interactive);  // Просто пустая строка
+            print_line("", interactive);
             *hp = true;
         }
     };
@@ -583,7 +594,6 @@ fn handle_sub_add(storage: &mut EventStorage, is_ru: bool) {
         return;
     }
 
-    // Добавляем .clone() чтобы не перемещать validated_date
     storage.events.entry(validated_date.clone()).or_insert_with(Vec::new).push(desc);
     save_all_events(storage);
     
@@ -669,11 +679,12 @@ fn handle_sub_delete(storage: &mut EventStorage, is_ru: bool) {
 
 fn handle_interactive_manager(is_ru: bool) {
     let mut storage = load_events();
+    let file_path = get_events_file_path();
     
     let menu_msg = if is_ru {
-        "\n--- МЕНЕДЖЕР ЗАДАЧ mcal ---\n[l] Показать все записи\n[a] Добавить запись\n[d] Удалить запись\n[q] Выйти в терминал\nВыберите действие: "
+        format!("\n--- МЕНЕДЖЕР ЗАДАЧ mcal ---\nФайл: {}\n[l] Показать все записи\n[a] Добавить запись\n[d] Удалить запись\n[q] Выйти в терминал\nВыберите действие: ", file_path.display())
     } else {
-        "\n--- mcal EVENT MANAGER ---\n[l] List all events\n[a] Add new event\n[d] Delete event\n[q] Quit to terminal\nChoose action: "
+        format!("\n--- mcal EVENT MANAGER ---\nFile: {}\n[l] List all events\n[a] Add new event\n[d] Delete event\n[q] Quit to terminal\nChoose action: ", file_path.display())
     };
 
     loop {
@@ -697,6 +708,8 @@ fn handle_interactive_manager(is_ru: bool) {
 // ========== ПОМОЩЬ И ВЕРСИЯ ==========
 
 fn print_help() {
+    println!("mcal version 0.8.4");
+    println!();
     println!("Usage: mcal [options]");
     println!();
     println!("Options:");
@@ -716,11 +729,12 @@ fn print_help() {
     println!("              lists descriptions below the grid for the rendered period.");
     println!("              Overdue events will have their dates highlighted in red.");
     println!("              Supports global '00.00.0000' (always shown) and yearly '00.00.YYYY' events.");
-    println!("              Data file path: ~/.config/mcal/events.txt");
     println!("  -l          List all existing events from database chronologically.");
     println!("  -a          Interactive event manager console. Features:");
     println!("              [l] list events, [a] add event (pre-fills today's date, use arrow keys");
     println!("              to edit, supports YY, 00.00.0000, 00.00.YYYY), [d] delete event by index.");
+    println!("  -p <path>   Use custom events file path (e.g., -p /home/user/my_events.txt)");
+    println!("  -P          Show current events file path");
 }
 
 // ========== ОСНОВНАЯ ФУНКЦИЯ ==========
@@ -735,12 +749,17 @@ fn main() {
 
     let args: Vec<String> = env::args().skip(1).collect();
 
+    // Проверяем аргументы для показа пути
     for arg in &args {
         if arg == "-h" || arg == "--help" {
             print_help();
             std::process::exit(0);
         } else if arg == "-v" || arg == "--version" {
-            println!("mcal version 0.8.3");
+            println!("mcal version 0.8.4");
+            std::process::exit(0);
+        } else if arg == "-P" {
+            let path = get_events_file_path();
+            println!("{}", path.display());
             std::process::exit(0);
         }
     }
@@ -767,13 +786,26 @@ fn main() {
     let mut manager_mode = false;
     let mut list_only_mode = false;
     let mut show_week_numbers = false;
+    let mut custom_path: Option<PathBuf> = None;
 
     // Парсинг аргументов
-    for arg in &args {
+    let mut args_iter = args.iter().peekable();
+    while let Some(arg) = args_iter.next() {
         if !arg.starts_with('-') || arg.len() < 2 {
             eprintln!("Error: Unknown argument {}", arg);
             std::process::exit(1);
         }
+        
+        if arg == "-p" {
+            if let Some(path) = args_iter.next() {
+                custom_path = Some(PathBuf::from(path));
+                continue;
+            } else {
+                eprintln!("Error: -p requires a path argument");
+                std::process::exit(1);
+            }
+        }
+        
         if arg.starts_with("-x") {
             if let Ok(year) = arg[2..].parse::<i32>() {
                 start_year = year; 
@@ -820,6 +852,11 @@ fn main() {
                     cols_count = 3; 
                     mode_selected = true;
                 }
+                'P' => {
+                    let path = get_events_file_path();
+                    println!("{}", path.display());
+                    std::process::exit(0);
+                }
                 '0'..='9' => {
                     let mut num_str = c.to_string();
                     while let Some(&next_c) = chars.peek() {
@@ -846,6 +883,11 @@ fn main() {
                 }
             }
         }
+    }
+
+    // Устанавливаем пользовательский путь если указан
+    if let Some(path) = custom_path {
+        let _ = EVENTS_FILE_PATH.set(path);
     }
 
     // Режимы работы
@@ -904,9 +946,9 @@ fn main() {
                     let total_weeks = last_day_of_year.iso_week().week();
                     print!("\r\n");
                     if is_ru {
-                        print!("Всего недель в {} году: {}", start_year, total_weeks);
+                        println!("Всего недель в {} году: {}", start_year, total_weeks);
                     } else {
-                        print!("Total weeks in year {}: {}", start_year, total_weeks);
+                        println!("Total weeks in year {}: {}", start_year, total_weeks);
                     }
                 }
             }
