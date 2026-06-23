@@ -242,8 +242,9 @@ fn generate_month_lines(
         }
     };
 
+    // Для заголовка используем просто отступ в 3 пробела (без "Wk")
     let wnum_header_pad = if show_week_numbers { 
-        format!("{}{:>2} ", GRAY, "Wk")
+        "   ".to_string() 
     } else { 
         String::new() 
     };
@@ -287,7 +288,6 @@ fn generate_month_lines(
         let wday = date.weekday();
         let is_today = date == today;
         let is_weekend = wday == Weekday::Sat || wday == Weekday::Sun;
-        // Проверяем только конкретные события, годовые не подсвечиваем
         let has_event = show_events && storage.events.contains_key(&EventDate::Specific(date));
 
         let mut day_str = format!("{:>2}", day);
@@ -325,7 +325,7 @@ fn generate_month_lines(
         temp_week_lines.push((week_num, current_line));
     }
 
-    // Вывод недель
+    // Вывод недель с номерами (только цифры, серым цветом)
     for (wnum, mut grid_line) in temp_week_lines {
         let prefix = if show_week_numbers {
             format!("{}{:>2}{} ", GRAY, wnum, RESET)
@@ -336,7 +336,8 @@ fn generate_month_lines(
         if use_border {
             grid_line = format!("│{}│", grid_line);
         }
-        lines.push(format!("{}{}", prefix, grid_line));
+        // Добавляем RESET в конце строки для гарантии сброса цвета
+        lines.push(format!("{}{}{}", prefix, grid_line, RESET));
     }
 
     // Дополнение пустыми строками до нужной высоты
@@ -354,13 +355,17 @@ fn generate_month_lines(
             String::new() 
         };
         let grid_part = if use_border { format!("│{}│", empty_line) } else { empty_line };
-        lines.push(format!("{}{}", prefix, grid_part));
+        // Добавляем RESET в конце строки для гарантии сброса цвета
+        lines.push(format!("{}{}{}", prefix, grid_part, RESET));
     }
 
     if use_border {
-        lines.push(format!("{}└────────────────────┘", 
-            if show_week_numbers { format!("{}{:>2} ", GRAY, "  ") } else { String::new() }
-        ));
+        let footer_prefix = if show_week_numbers {
+            "   ".to_string()
+        } else {
+            String::new()
+        };
+        lines.push(format!("{}└────────────────────┘{}", footer_prefix, RESET));
     }
 
     lines
@@ -735,7 +740,7 @@ fn main() {
             print_help();
             std::process::exit(0);
         } else if arg == "-v" || arg == "--version" {
-            println!("mcal version 0.8.2");
+            println!("mcal version 0.8.3");
             std::process::exit(0);
         }
     }
